@@ -75,6 +75,11 @@ Controller Query was created in src/controllers/
 
 See code in [QueryController](src/controllers/query.controller.ts).
 
+#### Step 4: Try it out
+
+Go to API Explorer,
+![](mergedPRQuery.png)
+
 ## Running the application
 
 Run:
