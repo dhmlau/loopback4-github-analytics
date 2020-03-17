@@ -93,5 +93,6 @@ npm start
 - Repo to show how to call REST and SOAP services in LB4: https://github.com/dhmlau/loopback4-external-apis
 - [Calling other APIs and web services docs page](https://loopback.io/doc/en/lb4/Calling-other-APIs-and-web-services.html)
 - GitHub API reference, https://developer.github.com/v3/
+- GitHub search API, https://developer.github.com/v3/search/
 
 [![LoopBack](<https://github.com/strongloop/loopback-next/raw/master/docs/site/imgs/branding/Powered-by-LoopBack-Badge-(blue)-@2x.png>)](http://loopback.io/)
