@@ -11,7 +11,8 @@ Note: this repo is still working in progress.
 1. Create a datasource with `REST service` as the connector.
 
    ```sh
-   $ lb4 datasource? Datasource name: githubds
+   $ lb4 datasource
+   ? Datasource name: githubds
    ? Select the connector for githubds: REST services (supported by StrongLoop)
    ? Base URL for the REST service: https://api.github.com
    ? Default options for the request:
@@ -78,6 +79,7 @@ See code in [QueryController](src/controllers/query.controller.ts).
 #### Step 4: Try it out
 
 Go to API Explorer,
+
 ![](mergedPRQuery.png)
 
 ## Running the application

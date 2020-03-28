@@ -19,6 +19,8 @@ export interface GhQueryService {
     startdate: string,
     enddate: string,
   ): Promise<QueryResponse>;
+
+  getResults(url: string): Promise<QueryResponse>;
 }
 
 export interface QueryResponse {
@@ -31,6 +33,7 @@ export class PRInfo {
   user: GitHubUser;
   number: number;
   created_at: string;
+  author_association: string;
 }
 export class GitHubUser {
   login: string;

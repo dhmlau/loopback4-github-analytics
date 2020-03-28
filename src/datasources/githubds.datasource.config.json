@@ -20,6 +20,15 @@
       "functions": {
         "getPRs": ["repo", "type", "action", "startdate", "enddate"]
       }
+    },
+    {
+      "template": {
+        "method": "GET",
+        "url": "{url}"
+      },
+      "functions": {
+        "getResults": ["url"]
+      }
     }
   ]
 }

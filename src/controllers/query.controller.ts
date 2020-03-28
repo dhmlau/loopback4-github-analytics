@@ -1,7 +1,9 @@
 // Uncomment these imports to begin using these cool features!
 
-import {inject} from '@loopback/context';
+import {Context, inject} from '@loopback/context';
+import {invokeMethod} from '@loopback/core';
 import {get, param} from '@loopback/rest';
+import {IncomingMessage} from 'http';
 import {GhQueryService, QueryResponse} from '../services';
 
 const coreMaintainerList: string[] = [
@@ -26,6 +28,7 @@ const communityMaintainerList: string[] = [
   'mschnee',
 ];
 
+// github id we want to ignore here
 const renovateBot: string = 'app/renovate';
 
 export class QueryController {
@@ -45,36 +48,62 @@ export class QueryController {
     @param.path.string('startdate') startdate: string,
     @param.path.string('enddate') enddate: string,
   ): Promise<QueryResult> {
-    let result: QueryResponse = await this.queryService.getPRs(
-      repo,
-      'pr',
-      'merged',
-      startdate,
-      enddate,
-    );
+    // let result: QueryResponse = await this.queryService.getPRs(
+    //   repo,
+    //   'pr',
+    //   'merged',
+    //   startdate,
+    //   enddate,
+    // );
 
     let count_maintainers: number = 0;
     let count_community: number = 0;
     let contributorList: Contributor[] = [];
 
-    //TODO need to traverse pagination.
-
-    result.items.forEach(item => {
-      if (coreMaintainerList.includes(item.user.login)) {
-        count_maintainers++;
-      } else {
-        count_community++;
-      }
-      addContribution(contributorList, item.user.login);
-    });
-
+    //Reference:
+    // pagination for github APIs: https://developer.github.com/v3/guides/traversing-with-pagination/#navigating-through-the-pages
+    // get headers: https://github.com/strongloop/loopback-connector-rest/issues/131
     let qr = new QueryResult();
-    qr.total_count = result.total_count;
+    await invokeMethod(this.queryService, 'getPRs', new Context(), [
+      repo,
+      'pr',
+      'merged',
+      startdate,
+      enddate,
+      function(err: object, result: object, response: IncomingMessage) {
+        qr.total_count = (result as QueryResponse).total_count;
+
+        (result as QueryResponse).items.forEach(item => {
+          if (coreMaintainerList.includes(item.user.login)) {
+            count_maintainers++;
+          } else {
+            count_community++;
+          }
+          addContribution(contributorList, item.user.login);
+        });
+
+        // check if the results are in multiple pages
+        console.log(response.headers.link);
+        if (response.headers.link) {
+          const link: string = response.headers.link as string;
+          const nextLink = getNextLink(link.slice(0, link.indexOf(',')));
+          qr.nextLink = nextLink;
+          console.log('next link = ', nextLink);
+        }
+      },
+    ]);
+
     qr.count_maintainers = count_maintainers;
     qr.count_community = count_community;
     qr.contributions = contributorList;
     return qr;
   }
+}
+
+function getNextLink(link: string): string {
+  const nextPart: string = link.slice(0, link.indexOf(','));
+  const nextLink = nextPart.slice(1, nextPart.indexOf('>'));
+  return nextLink;
 }
 function addContribution(contributors: Contributor[], userId: string): void {
   let found: boolean = false;
@@ -99,6 +128,7 @@ class QueryResult {
   count_community: number;
   count_maintainers: number;
   contributions: Contributor[];
+  nextLink: string;
 }
 
 class Contributor {
