@@ -56,14 +56,15 @@ export class QueryController {
     //   enddate,
     // );
 
-    let count_maintainers: number = 0;
-    let count_community: number = 0;
-    let contributorList: Contributor[] = [];
+    // let count_maintainers: number = 0;
+    // let count_community: number = 0;
+    // let contributorList: Contributor[] = [];
 
     //Reference:
     // pagination for github APIs: https://developer.github.com/v3/guides/traversing-with-pagination/#navigating-through-the-pages
     // get headers: https://github.com/strongloop/loopback-connector-rest/issues/131
     let qr = new QueryResult();
+    qr.contributorList = [];
     await invokeMethod(this.queryService, 'getPRs', new Context(), [
       repo,
       'pr',
@@ -75,11 +76,12 @@ export class QueryController {
 
         (result as QueryResponse).items.forEach(item => {
           if (coreMaintainerList.includes(item.user.login)) {
-            count_maintainers++;
+            console.log('add.. ', item.user.login);
+            qr.count_maintainers++;
           } else {
-            count_community++;
+            qr.count_community++;
           }
-          addContribution(contributorList, item.user.login);
+          addContribution(qr.contributorList, item.user.login);
         });
 
         // check if the results are in multiple pages
@@ -92,12 +94,71 @@ export class QueryController {
         }
       },
     ]);
+    await getMoreResults(qr.nextLink, this.queryService, qr);
+    // while (qr.nextLink) {
+    //   console.log('!@#$$#$#@#$$#@');
+    //   await invokeMethod(this.queryService, 'getResults', new Context(), [
+    //     qr.nextLink,
+    //     function(err: object, result: object, response: IncomingMessage) {
+    //       (result as QueryResponse).items.forEach(item => {
+    //         if (coreMaintainerList.includes(item.user.login)) {
+    //           count_maintainers++;
+    //         } else {
+    //           count_community++;
+    //         }
+    //         addContribution(contributorList, item.user.login);
+    //       });
 
-    qr.count_maintainers = count_maintainers;
-    qr.count_community = count_community;
-    qr.contributions = contributorList;
+    //       // check if the results are in multiple pages
+    //       console.log(response.headers.link);
+    //       if (response.headers.link) {
+    //         const link: string = response.headers.link as string;
+    //         const nextLink = getNextLink(link.slice(0, link.indexOf(',')));
+    //         qr.nextLink = nextLink;
+    //         console.log('inside ... next link = ', nextLink);
+    //       }
+    //     },
+    //   ]);
+    // }
+    // console.log('returning...count_maintainers=', count_maintainers);
+    // qr.count_maintainers = count_maintainers;
+    // qr.count_community = count_community;
+    // qr.contributorList = contributorList;
     return qr;
   }
+}
+
+async function getMoreResults(
+  nextLink: string,
+  queryService: GhQueryService,
+  qr: QueryResult,
+): Promise<QueryResult> {
+  while (qr.nextLink) {
+    console.log('!@#$$#$#@#$$#@');
+    await invokeMethod(queryService, 'getResults', new Context(), [
+      qr.nextLink,
+      function(err: object, result: object, response: IncomingMessage) {
+        (result as QueryResponse).items.forEach(item => {
+          if (coreMaintainerList.includes(item.user.login)) {
+            qr.count_maintainers++;
+          } else {
+            qr.count_community++;
+          }
+          addContribution(qr.contributorList, item.user.login);
+        });
+
+        // check if the results are in multiple pages
+        console.log(response.headers.link);
+        if (response.headers.link) {
+          const link: string = response.headers.link as string;
+          const nextLink = getNextLink(link.slice(0, link.indexOf(',')));
+          qr.nextLink = nextLink;
+          console.log('inside ... next link = ', nextLink);
+        }
+      },
+    ]);
+  }
+  return qr;
 }
 
 function getNextLink(link: string): string {
@@ -107,7 +168,7 @@ function getNextLink(link: string): string {
 }
 function addContribution(contributors: Contributor[], userId: string): void {
   let found: boolean = false;
-
+  console.log('contributors=', contributors);
   for (let contributor of contributors) {
     if (contributor.userId === userId) {
       contributor.count_contribution++;
@@ -127,7 +188,7 @@ class QueryResult {
   total_count: number;
   count_community: number;
   count_maintainers: number;
-  contributions: Contributor[];
+  contributorList: Contributor[];
   nextLink: string;
 }
 
